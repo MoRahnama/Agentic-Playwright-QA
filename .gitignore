@@ -6,4 +6,5 @@ artifacts/*
 !artifacts/.gitkeep
 playwright-report/
 test-results/
+dist/
 *.log

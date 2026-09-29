@@ -1,4 +1,44 @@
-const allowedRoles = new Set([
+import type { ChatCompletionTool } from "openai/resources/chat/completions";
+
+type AllowedRole =
+  | "button"
+  | "dialog"
+  | "heading"
+  | "img"
+  | "link"
+  | "list"
+  | "listitem"
+  | "navigation"
+  | "paragraph"
+  | "region";
+
+type ClickableRole = "button" | "link";
+
+export interface AgentAction {
+  tool: string;
+  path?: string;
+  role?: string;
+  name?: string;
+  text?: string;
+  error?: string;
+}
+
+type ActionReporter = (action: AgentAction) => void;
+type ToolArguments = Record<string, unknown>;
+
+interface BrowserPage {
+  goto(url: string, options?: { waitUntil: "domcontentloaded" }): Promise<unknown>;
+  getByRole(role: AllowedRole, options: { name: string; exact: true }): {
+    click(options?: { timeout: number }): Promise<void>;
+    waitFor(options: { state: "visible"; timeout: number }): Promise<void>;
+  };
+  locator(selector: string): {
+    ariaSnapshot(): Promise<string>;
+    innerText(): Promise<string>;
+  };
+}
+
+const allowedRoles: ReadonlySet<string> = new Set([
   "button", "dialog", "heading", "img", "link", "list", "listitem",
   "navigation", "paragraph", "region"
 ]);
@@ -6,14 +46,14 @@ const allowedPaths = new Set(["/", "/#top", "/#gallery", "/#flight-log"]);
 const allowedLinks = new Set(["Mo On The Move home", "Gallery", "Flight Log", "View Gallery"]);
 const allowedButtons = new Set(["All", "Photos", "Videos", "Close viewer"]);
 
-function requireString(value, field, maxLength = 500) {
+function requireString(value: unknown, field: string, maxLength = 500): string {
   if (typeof value !== "string" || value.trim().length === 0 || value.length > maxLength) {
     throw new Error(`${field} must be a non-empty string of at most ${maxLength} characters.`);
   }
   return value;
 }
 
-export function resolveTargetUrl(baseURL, path) {
+export function resolveTargetUrl(baseURL: string, path: string): string {
   requireString(path, "path", 2048);
   const base = new URL(baseURL);
   if (base.origin !== "https://moonthemove.top" || base.protocol !== "https:") {
@@ -26,8 +66,8 @@ export function resolveTargetUrl(baseURL, path) {
   return target.toString();
 }
 
-export function createAgentTools(page, baseURL, onAction = () => {}) {
-  const definitions = [
+export function createAgentTools(page: BrowserPage, baseURL: string, onAction: ActionReporter = () => {}) {
+  const definitions: ChatCompletionTool[] = [
     {
       type: "function",
       function: {
@@ -96,12 +136,13 @@ export function createAgentTools(page, baseURL, onAction = () => {}) {
     }
   ];
 
-  async function execute(name, args) {
+  async function execute(name: string, args: ToolArguments): Promise<string> {
     switch (name) {
       case "navigate": {
-        const url = resolveTargetUrl(baseURL, args.path);
+        const path = requireString(args.path, "path", 2048);
+        const url = resolveTargetUrl(baseURL, path);
         await page.goto(url, { waitUntil: "domcontentloaded" });
-        onAction({ tool: name, path: args.path });
+        onAction({ tool: name, path });
         return `Opened ${new URL(url).pathname}${new URL(url).hash}`;
       }
       case "inspect_page": {
@@ -112,7 +153,7 @@ export function createAgentTools(page, baseURL, onAction = () => {}) {
       case "click": {
         const role = requireString(args.role, "role");
         const accessibleName = requireString(args.name, "name");
-        if (!["button", "link"].includes(role) || !isSafeClickTarget(role, accessibleName)) {
+        if (!isClickableRole(role) || !isSafeClickTarget(role, accessibleName)) {
           throw new Error(`The ${role} "${accessibleName}" is not an approved read-only control.`);
         }
         await page.getByRole(role, { name: accessibleName, exact: true }).click({ timeout: 5000 });
@@ -129,7 +170,7 @@ export function createAgentTools(page, baseURL, onAction = () => {}) {
       case "assert_visible": {
         const role = requireString(args.role, "role");
         const accessibleName = requireString(args.name, "name");
-        if (!allowedRoles.has(role)) throw new Error(`Unsupported accessible role: ${role}`);
+        if (!isAllowedRole(role)) throw new Error(`Unsupported accessible role: ${role}`);
         await page.getByRole(role, { name: accessibleName, exact: true }).waitFor({ state: "visible", timeout: 5000 });
         onAction({ tool: name, role, name: accessibleName });
         return `PASS: ${role} "${accessibleName}" is visible.`;
@@ -142,7 +183,15 @@ export function createAgentTools(page, baseURL, onAction = () => {}) {
   return { definitions, execute };
 }
 
-function isSafeClickTarget(role, name) {
+function isAllowedRole(role: string): role is AllowedRole {
+  return allowedRoles.has(role);
+}
+
+function isClickableRole(role: string): role is ClickableRole {
+  return role === "button" || role === "link";
+}
+
+function isSafeClickTarget(role: ClickableRole, name: string): boolean {
   if (role === "link") return allowedLinks.has(name);
   return allowedButtons.has(name) || name.startsWith("Open ") || /^[^,]+, \d+ flights?\.$/.test(name);
 }

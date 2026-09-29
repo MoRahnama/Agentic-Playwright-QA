@@ -3,14 +3,22 @@ export const DEFAULT_MAX_STEPS = 16;
 export const DEFAULT_TARGET_URL = "https://moonthemove.top/";
 const ALLOWED_TARGET_ORIGIN = "https://moonthemove.top";
 
-export function readAgentConfig(env = process.env) {
+export interface AgentConfig {
+  apiKey: string;
+  baseURL: string | undefined;
+  model: string;
+  targetURL: string;
+  maxSteps: number;
+}
+
+export function readAgentConfig(env: NodeJS.ProcessEnv = process.env): AgentConfig {
   const apiKey = env.OPENAI_API_KEY?.trim();
   if (!apiKey) {
     throw new Error("OPENAI_API_KEY is required. Copy .env.example to .env and add your API key.");
   }
 
   const targetURL = env.TARGET_URL?.trim() || DEFAULT_TARGET_URL;
-  let parsedTarget;
+  let parsedTarget: URL;
   try {
     parsedTarget = new URL(targetURL);
   } catch {

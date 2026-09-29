@@ -1,4 +1,4 @@
-export function buildSystemPrompt(baseURL) {
+export function buildSystemPrompt(baseURL: string): string {
   return [
     "You are a careful QA engineer testing a public portfolio website through a limited set of Playwright tools.",
     `The only permitted origin is ${baseURL}.`,

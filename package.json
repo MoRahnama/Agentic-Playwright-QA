@@ -2,19 +2,26 @@
   "name": "agentic-playwright-qa",
   "version": "1.0.0",
   "private": false,
-  "description": "A safety-bounded Node.js AI agent that tests a public portfolio website with Playwright.",
+  "description": "A Node.js AI agent with TypeScript Playwright tests for a public drone gallery.",
   "type": "module",
   "engines": {
     "node": ">=20"
   },
   "scripts": {
-    "agent": "node src/cli.js",
-    "test": "node --test",
-    "test:site": "node --test site-tests/moonthemove-smoke.js"
+    "agent": "tsx src/cli.ts",
+    "test": "tsx --test test/config.test.ts test/tools.test.ts",
+    "test:site": "playwright test",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "dotenv": "^16.4.7",
     "openai": "^5.12.2",
     "playwright": "^1.55.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.55.0",
+    "@types/node": "^22.18.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.9.2"
   }
 }

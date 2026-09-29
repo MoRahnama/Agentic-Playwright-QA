@@ -26,7 +26,7 @@
 
 ## Development
 
-- Use Node.js 20 or newer and follow the existing ES module style.
+- Use Node.js 20 or newer and TypeScript for all application and test code. Keep the ES module style and explicit `.js` import specifiers used by NodeNext TypeScript resolution.
 - Keep default tests local, deterministic, and free of API credentials.
 - Live website tests must be opt-in (`npm run test:site`), read-only, and clearly documented because they contact the public site. Keep them outside the default test discovery tree.
 - Keep Playwright locators accessible and assertions tied to observable page behavior.

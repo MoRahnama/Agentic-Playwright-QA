@@ -1,6 +1,6 @@
 # Agentic Playwright QA
 
-A Node.js learning project demonstrating how an AI model can choose safe browser actions and use Playwright to check a real website. The current target is the public [MoonOnTheMove drone gallery and flight log](https://moonthemove.top/).
+A TypeScript and Node.js learning project demonstrating how an AI model can choose safe browser actions and use Playwright to check the public [MoonOnTheMove drone gallery and flight log](https://moonthemove.top/). The agent, unit tests, Playwright spec, and configuration are TypeScript.
 
 ## What happens
 
@@ -27,6 +27,7 @@ Do not use this starter against another origin or expand its allowed actions wit
 
 - Node.js 20 or newer
 - npm
+- TypeScript (installed from the project dependencies)
 - Chromium installed for Playwright
 - An API key for an OpenAI-compatible API to run the LLM agent
 
@@ -58,23 +59,36 @@ Run deterministic unit tests without an API key or live-site traffic:
 npm test
 ```
 
-Run the optional browser smoke test against the live public site:
+Type-check the agent, unit tests, Playwright spec, and configuration:
+
+```powershell
+npm run typecheck
+```
+
+Run the optional browser test against the live public site:
 
 ```powershell
 npm run test:site
 ```
 
-The live test requires Chromium and an internet connection. It loads the homepage, checks headings and filters, opens and closes a media detail, and selects a flight-log marker. It does not call the AI API or modify site data.
+The live test requires Chromium and an internet connection. It loads the homepage, checks headings and gallery filters, opens and closes a media detail, and selects a flight-log marker. It does not call the AI API or modify site data.
+
+## Continuous integration
+
+The GitHub Actions workflow in `.github/workflows/ci.yml` installs dependencies with `npm install`, then runs the deterministic `npm test` suite and type-checks the full TypeScript project with `npm run typecheck` on pushes to `main`, pull requests targeting `main`, and manual dispatch. It does not run the live website test.
 
 ## Project layout
 
 ```text
 .github/copilot-instructions.md  Repository rules, including no automatic push
+.github/workflows/ci.yml        Unit tests and TypeScript check in GitHub Actions
 src/
-  agent/                         Agent config, prompt, browser tools, and loop
-  cli.js                         Browser launch and evidence capture
-test/                            Local, deterministic unit tests
-site-tests/                      Opt-in live website smoke test
+  agent/                         Typed config, prompt, browser tools, and loop
+  cli.ts                          Browser launch and evidence capture
+test/                            Typed, local deterministic unit tests
+site-tests/                      TypeScript Playwright test of the live website
+playwright.config.ts             Playwright test-runner settings
+tsconfig.json                    TypeScript type-check settings
 artifacts/                       Generated evidence; ignored by Git
 local-only/                      Personal notes; ignored by Git
 ```
