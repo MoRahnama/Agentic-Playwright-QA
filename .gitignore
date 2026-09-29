@@ -1,0 +1,8 @@
+node_modules/
+.env
+.vscode/
+artifacts/*
+!artifacts/.gitkeep
+playwright-report/
+test-results/
+*.log
