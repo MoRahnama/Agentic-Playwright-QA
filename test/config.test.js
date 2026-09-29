@@ -1,31 +1,34 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readAgentConfig } from "../src/agent/config.js";
-import { resolveLocalUrl } from "../src/agent/tools.js";
+import { DEFAULT_TARGET_URL, readAgentConfig } from "../src/agent/config.js";
+import { resolveTargetUrl } from "../src/agent/tools.js";
 
 test("reads required and optional agent settings", () => {
   assert.deepEqual(readAgentConfig({
     OPENAI_API_KEY: " test-key ",
-    PORT: "5000",
     MAX_AGENT_STEPS: "8",
     OPENAI_MODEL: "example-model"
   }), {
     apiKey: "test-key",
     baseURL: undefined,
     model: "example-model",
-    port: 5000,
+    targetURL: DEFAULT_TARGET_URL,
     maxSteps: 8
   });
 });
 
 test("rejects missing credentials and invalid limits", () => {
   assert.throws(() => readAgentConfig({}), /OPENAI_API_KEY is required/);
-  assert.throws(() => readAgentConfig({ OPENAI_API_KEY: "key", PORT: "70000" }), /PORT must be an integer/);
   assert.throws(() => readAgentConfig({ OPENAI_API_KEY: "key", MAX_AGENT_STEPS: "41" }), /MAX_AGENT_STEPS must be an integer/);
+  assert.throws(() => readAgentConfig({ OPENAI_API_KEY: "key", TARGET_URL: "https://example.com/" }), /approved origin/);
+  assert.throws(() => readAgentConfig({ OPENAI_API_KEY: "key", TARGET_URL: "http://moonthemove.top/" }), /approved origin/);
 });
 
-test("allows only local-origin paths for browser navigation", () => {
-  assert.equal(resolveLocalUrl("http://127.0.0.1:4173", "/"), "http://127.0.0.1:4173/");
-  assert.throws(() => resolveLocalUrl("http://127.0.0.1:4173", "https://example.com"), /restricted to paths/);
-  assert.throws(() => resolveLocalUrl("http://127.0.0.1:4173", "//example.com"), /restricted to paths/);
+test("allows only approved same-site routes", () => {
+  const origin = "https://moonthemove.top";
+  assert.equal(resolveTargetUrl(origin, "/"), `${origin}/`);
+  assert.equal(resolveTargetUrl(origin, "/#flight-log"), `${origin}/#flight-log`);
+  assert.throws(() => resolveTargetUrl(origin, "https://example.com"), /approved sections/);
+  assert.throws(() => resolveTargetUrl(origin, "//example.com"), /approved sections/);
+  assert.throws(() => resolveTargetUrl("https://example.com", "/"), /approved MoonOnTheMove/);
 });

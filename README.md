@@ -1,26 +1,38 @@
 # Agentic Playwright QA
 
-A small, runnable portfolio project demonstrating how an LLM agent can explore and test a web UI with Playwright. The model chooses from a narrow set of browser tools; Playwright performs the real UI interactions and checks.
+A Node.js learning project demonstrating how an AI model can choose safe browser actions and use Playwright to check a real website. The current target is the public [MoonOnTheMove drone gallery and flight log](https://moonthemove.top/).
 
-## What it demonstrates
+## What happens
 
-- Node.js ES modules and an OpenAI-compatible chat-completions client.
-- Model-driven tool selection for navigating, inspecting, filling, clicking, and asserting.
-- Playwright accessibility locators instead of brittle CSS selectors.
-- A local demo app and a deterministic end-to-end test that needs no API key.
-- Bounded agent turns, a small explicit tool allowlist, and same-origin navigation checks.
-- Screenshot, trace, and JSON action log artifacts for each successful agent run.
+1. You give the agent a browser-testing goal.
+2. Node.js sends the goal and a limited menu of browser tools to an OpenAI-compatible model.
+3. The model chooses a tool, such as inspecting the page, selecting a gallery filter, or opening a media detail.
+4. Node.js validates the request and Playwright performs the action in Chromium.
+5. The resulting page snapshot or assertion result is returned to the model, which can choose another allowed action.
+6. The agent reports what it observed. A claim from the model is not proof; check assertion results and run evidence.
 
-The agent only tests the included local task board. It cannot execute model-generated code or navigate to arbitrary websites. This is a learning project, not a production autonomous-testing service.
+This choose, act, observe, and repeat cycle is what makes the program agentic. The model makes decisions within the tools the program permits; it does not get arbitrary computer access.
+
+## Safety boundary
+
+- The browser is restricted to `https://moonthemove.top/` and a short list of same-page sections.
+- Available actions are read-only: inspect public content, use gallery filters, open media details, select flight-location markers, and check page content.
+- There is no form-filling tool. The agent is not permitted to log in, upload, edit, delete, contact anyone, submit forms, follow external links, or change persistent data.
+- Visible page snapshots and your test objective are sent to the configured AI API provider. Use public content only. Do not place secrets, credentials, or private information in a test objective.
+- The local screenshots, traces, and action logs are stored under the ignored `artifacts/` folder.
+
+Do not use this starter against another origin or expand its allowed actions without reviewing the safety rules. A local or staging test target is preferable before any future testing that changes data.
 
 ## Requirements
 
 - Node.js 20 or newer
 - npm
-- A Chromium browser installed for Playwright
-- An API key for an OpenAI-compatible API to run the agent (not needed for deterministic tests)
+- Chromium installed for Playwright
+- An API key for an OpenAI-compatible API to run the LLM agent
 
 ## Setup
+
+In PowerShell, from the project folder:
 
 ```powershell
 npm install
@@ -28,72 +40,46 @@ npx playwright install chromium
 Copy-Item .env.example .env
 ```
 
-Set `OPENAI_API_KEY` in `.env`. Never commit `.env` or paste a real key into an issue or source file. The default model is `gpt-4o-mini`; change `OPENAI_MODEL` and, if needed, `OPENAI_BASE_URL` for a compatible provider.
+Set `OPENAI_API_KEY` in `.env`. Never commit or share this file. The default model is `gpt-4o-mini`; `OPENAI_BASE_URL` and `OPENAI_MODEL` can select a compatible provider and model.
 
-## Try it
-
-In one terminal, run the app:
+## Run the agent
 
 ```powershell
-npm start
+npm run agent -- "Open the Flight Log section and verify that the map and its flight locations are visible"
 ```
 
-Open `http://127.0.0.1:4173` to explore it manually. In another terminal, run the agent:
+The program opens the approved site in headless Chromium. Each successful run saves a screenshot, a Playwright trace, and a JSON action log to `artifacts/`. Review those files and the recorded assertions; the model's final summary alone is not a pass/fail result.
 
-```powershell
-npm run agent -- "Add a task named Review release notes, mark it complete, and verify it appears in Completed"
-```
+## Tests
 
-The agent runner starts its own isolated demo server on `AGENT_PORT` (default `0`, which selects an available port), launches headless Chromium, and saves successful run evidence to `artifacts/`. The standalone server uses `PORT` (default `4173`). Stop a manually started demo server with Ctrl+C.
-
-Run the API-key-free checks:
+Run deterministic unit tests without an API key or live-site traffic:
 
 ```powershell
 npm test
 ```
 
-Run the browser end-to-end test:
+Run the optional browser smoke test against the live public site:
 
 ```powershell
-npm run test:e2e
+npm run test:site
 ```
 
-## Agent tool contract
-
-| Tool | Purpose |
-| --- | --- |
-| `navigate` | Open a path on the local demo app only |
-| `inspect_page` | Read the accessible page snapshot |
-| `click` | Click by accessible role and exact name |
-| `fill` | Fill by exact accessible label |
-| `assert_text` | Confirm visible text on the page |
-| `assert_visible` | Confirm a role/name locator is visible |
-
-`MAX_AGENT_STEPS` limits model turns (default 16, maximum 40). Tool arguments are validated, action failures are returned to the model, and the run fails if the step limit is reached.
+The live test requires Chromium and an internet connection. It loads the homepage, checks headings and filters, opens and closes a media detail, and selects a flight-log marker. It does not call the AI API or modify site data.
 
 ## Project layout
 
 ```text
+.github/copilot-instructions.md  Repository rules, including no automatic push
 src/
-  agent/       Agent configuration, prompt, tool contract, and loop
-  demo-app/    Local task-board target application
-  cli.js       Agent runner and evidence capture
-  server.js    Local-only static demo server
-test/          Configuration, safety, and browser behavior tests
-artifacts/     Generated run logs, screenshots, and Playwright traces (gitignored)
+  agent/                         Agent config, prompt, browser tools, and loop
+  cli.js                         Browser launch and evidence capture
+test/                            Local, deterministic unit tests
+site-tests/                      Opt-in live website smoke test
+artifacts/                       Generated evidence; ignored by Git
+local-only/                      Personal notes; ignored by Git
 ```
 
-## Good next practice tasks
-
-1. Add a `delete task` workflow and a deterministic test for it.
-2. Add a seeded defect, such as a filter that displays the wrong task state, and see whether the agent catches it.
-3. Add an explicit test plan output before the first browser action.
-4. Add retry policy and a machine-readable pass/fail result based on assertions rather than the agent's final prose.
-5. Compare two compatible models on the same task and record tool-call count and verified outcome.
-
-## Limitations
-
-The model may choose an inefficient path or fail to complete an ambiguous objective. A final language-model summary alone is not proof of success: inspect the action log, screenshot, trace, and assertion results. Never point this starter project at a production system or provide credentials for a site.
+`local-only/` is for personal learning material, not project documentation. It is excluded from Git so its contents will not be pushed with the repository.
 
 ## License
 

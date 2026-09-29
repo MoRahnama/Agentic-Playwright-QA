@@ -2,16 +2,15 @@
   "name": "agentic-playwright-qa",
   "version": "1.0.0",
   "private": false,
-  "description": "A safety-bounded LLM agent that tests a local web app with Playwright.",
+  "description": "A safety-bounded Node.js AI agent that tests a public portfolio website with Playwright.",
   "type": "module",
   "engines": {
     "node": ">=20"
   },
   "scripts": {
-    "start": "node src/server.js",
     "agent": "node src/cli.js",
     "test": "node --test",
-    "test:e2e": "node --test test/e2e.test.js"
+    "test:site": "node --test site-tests/moonthemove-smoke.js"
   },
   "dependencies": {
     "dotenv": "^16.4.7",
