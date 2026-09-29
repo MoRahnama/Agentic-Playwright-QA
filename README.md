@@ -1,6 +1,6 @@
 # Agentic Playwright QA
 
-A TypeScript and Node.js learning project demonstrating how an AI model can choose safe browser actions and use Playwright to check the public [MoonOnTheMove drone gallery and flight log](https://moonthemove.top/). The agent, unit tests, Playwright spec, and configuration are TypeScript.
+A TypeScript and Node.js learning project demonstrating how an AI model can choose safe browser actions and use Playwright to check the public [MoOnTheMove drone gallery and flight log](https://moonthemove.top/). The agent, unit tests, Playwright spec, and configuration are TypeScript.
 
 ## What happens
 
