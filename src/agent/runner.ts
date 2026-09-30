@@ -54,7 +54,11 @@ export async function runAgent({
 
     for (const call of calls) {
       let result: string;
+      const toolName = call.type === "function" ? call.function.name : "unknown";
       try {
+        if (call.type !== "function") {
+          throw new Error("The model requested an unsupported custom tool.");
+        }
         const args: unknown = JSON.parse(call.function.arguments);
         if (!isToolArguments(args)) {
           throw new Error("Tool arguments must be a JSON object.");
@@ -63,7 +67,7 @@ export async function runAgent({
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         result = `TOOL ERROR: ${message}`;
-        onAction({ tool: call.function.name, error: message });
+        onAction({ tool: toolName, error: message });
       }
       messages.push({ role: "tool", tool_call_id: call.id, content: result });
     }

@@ -45,7 +45,7 @@ test("offers only the read-only browser tools", () => {
   const { page } = createMockPage();
   const tools = createAgentTools(page, "https://moonthemove.top");
   assert.deepEqual(
-    tools.definitions.map((tool) => tool.function.name),
+    tools.definitions.map((tool) => tool.type === "function" ? tool.function.name : "unknown"),
     ["navigate", "inspect_page", "click", "assert_text", "assert_visible"]
   );
 });
